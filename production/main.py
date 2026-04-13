@@ -10,6 +10,7 @@ Controls relays directly via Raspberry Pi GPIO pins
 
 import cv2
 from cvzone.HandTrackingModule import HandDetector
+from picamera2 import Picamera2
 import time
 import RPi.GPIO as GPIO
 
@@ -25,10 +26,12 @@ GPIO.setwarnings(False)
 GPIO.setup(RELAY1_PIN, GPIO.OUT, initial=GPIO.HIGH)  # HIGH = OFF (active LOW)
 GPIO.setup(RELAY2_PIN, GPIO.OUT, initial=GPIO.HIGH)  # HIGH = OFF (active LOW)
 
-# Initialize webcam
-cap = cv2.VideoCapture(0)
-cap.set(3, 1280)  # Width
-cap.set(4, 720)   # Height
+# Initialize camera
+picam2 = Picamera2()
+picam2.configure(picam2.create_preview_configuration(
+    main={"format": "RGB888", "size": (640, 480)}
+))
+picam2.start()
 
 # Initialize hand detector
 detector = HandDetector(detectionCon=0.8, maxHands=1)
@@ -79,10 +82,7 @@ def main():
     print("Press 'q' to quit")
 
     while True:
-        success, img = cap.read()
-        if not success:
-            print("Failed to capture image")
-            break
+        img = picam2.capture_array()
 
         # Flip image horizontally for mirror effect
         img = cv2.flip(img, 1)
@@ -140,7 +140,6 @@ def main():
         if key == ord('q'):
             break
 
-    cap.release()
     cv2.destroyAllWindows()
     GPIO.cleanup()
 
